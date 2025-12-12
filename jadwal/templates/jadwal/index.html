@@ -1,69 +1,132 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <title>Penjadwalan B-Tree Web</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-    />
-  </head>
-  <body class="container mt-5">
-    <h1 class="mb-4">Daftar Kegiatan</h1>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Penjadwalan - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body { background-color: #f4f7fe; font-family: 'Inter', sans-serif; color: #334155; }
+        .main-card { background: white; border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05); padding: 1.5rem; margin-top: 2rem; }
+        
+        /* Table Styles */
+        .table thead th { background: #f8fafc; color: #64748b; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border: none; padding: 12px; }
+        .table tbody tr { border-bottom: 1px solid #f1f5f9; transition: all 0.2s; }
+        .table tbody tr:hover { background-color: #f8fafc; }
+        .table td { vertical-align: middle; padding: 12px; border: none; font-size: 0.9rem; }
+        
+        .date-badge { background: #e0e7ff; color: #4338ca; padding: 4px 10px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; }
+        
+        /* Pagination Styling */
+        .pagination .page-link { border: none; color: #64748b; margin: 0 3px; border-radius: 8px; font-weight: 600; }
+        .pagination .page-item.active .page-link { background-color: #4f46e5; color: white; }
 
-    <div class="d-flex justify-content-between mb-3">
-      <a href="{% url 'tambah_kegiatan' %}" class="btn btn-primary"
-        >+ Tambah Baru</a
-      >
-      <form method="GET" class="d-flex">
-        <input
-          name="q"
-          class="form-control me-2"
-          placeholder="Cari kegiatan..."
-          value="{{ query|default:'' }}"
-        />
-        <button type="submit" class="btn btn-outline-success">Cari</button>
-      </form>
+        .form-select-sm, .form-control-sm { border-radius: 8px; border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="container pb-5">
+    <div class="main-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h1 class="h4 fw-bold mb-1"><i class="fa-solid fa-calendar-check text-primary me-2"></i>Daftar Kegiatan</h1>
+                <p class="text-muted small mb-0">Kelola jadwal Anda dengan sistem urutan dan pencarian.</p>
+            </div>
+            <a href="{% url 'tambah_kegiatan' %}" class="btn btn-primary btn-sm px-3" style="background-color: #4f46e5; border-radius: 8px; border: none;">
+                <i class="fa-solid fa-plus me-1"></i> Tambah Baru
+            </a>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <form method="GET" class="row g-2">
+                    <div class="col-md-7">
+                        <div class="input-group input-group-sm">
+                            <input name="q" class="form-control" placeholder="Cari nama kegiatan..." value="{{ query|default:'' }}">
+                            <button class="btn btn-success" type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5">
+                        <select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="asc" {% if sort == 'asc' %}selected{% endif %}>📅 Terlama</option>
+                            <option value="desc" {% if sort == 'desc' %}selected{% endif %}>📅 Terbaru</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Waktu</th>
+                        <th>Kegiatan</th>
+                        <th>Tempat</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for k in kegiatan_list %}
+                    <tr>
+                        <td><span class="date-badge">{{ k.tanggal|date:"d M Y" }}</span></td>
+                        <td class="text-secondary fw-semibold">{{ k.waktu_mulai|time:"H:i" }} - {{ k.waktu_selesai|time:"H:i" }}</td>
+                        <td>
+                            <div class="fw-bold">{{ k.nama }}</div>
+                            <div class="text-muted small">{{ k.deskripsi|truncatechars:40 }}</div>
+                        </td>
+                        <td><i class="fa-solid fa-location-dot text-muted me-1"></i>{{ k.tempat }}</td>
+                        <td class="text-center">
+                            <div class="btn-group">
+                                <a href="{% url 'edit_kegiatan' k.pk %}" class="btn btn-sm text-warning" title="Edit"><i class="fa-solid fa-pen-to-square"></i></a>
+                                <a href="{% url 'hapus_kegiatan' k.pk %}" class="btn btn-sm text-danger" onclick="return confirm('Hapus kegiatan ini?')" title="Hapus"><i class="fa-solid fa-trash"></i></a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center py-5 text-muted">Data tidak ditemukan.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if kegiatan_list.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination pagination-sm justify-content-center">
+                {% if kegiatan_list.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ kegiatan_list.previous_page_number }}&q={{ query }}&sort={{ sort }}">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for num in kegiatan_list.paginator.page_range %}
+                    {% if kegiatan_list.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > kegiatan_list.number|add:'-3' and num < kegiatan_list.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}&q={{ query }}&sort={{ sort }}">{{ num }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if kegiatan_list.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ kegiatan_list.next_page_number }}&q={{ query }}&sort={{ sort }}">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
     </div>
 
-    <table class="table table-striped table-bordered">
-      <thead class="table-dark">
-        <tr>
-          <th>Tanggal</th>
-          <th>Waktu</th>
-          <th>Nama Kegiatan</th>
-          <th>Tempat</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for k in kegiatan_list %}
-        <tr>
-          <td>{{ k.tanggal }}</td>
-          <td>{{ k.waktu_mulai }} - {{ k.waktu_selesai }}</td>
-          <td>
-            <strong>{{ k.nama }}</strong><br /><small>{{ k.deskripsi }}</small>
-          </td>
-          <td>{{ k.tempat }}</td>
-          <td>
-            <a
-              href="{% url 'edit_kegiatan' k.pk %}"
-              class="btn btn-sm btn-warning"
-              >Edit</a
-            >
-            <a
-              href="{% url 'hapus_kegiatan' k.pk %}"
-              class="btn btn-sm btn-danger"
-              onclick="return confirm('Hapus?')"
-              >Hapus</a
-            >
-          </td>
-        </tr>
-        {% empty %}
-        <tr>
-          <td colspan="5" class="text-center">Tidak ada jadwal ditemukan.</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </body>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
 </html>
